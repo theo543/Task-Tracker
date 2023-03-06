@@ -22,7 +22,7 @@ public:
         std::cout<<"destructor facultate\n";
     }
     friend std::ostream& operator<<(std::ostream& os, const Facultate& facultate) {
-        os << "Facultate:" << facultate.nume;
+        os << "Facultate: " << facultate.nume;
         return os;
     }
 };
@@ -48,7 +48,10 @@ public:
     void setNume(std::string nume_) {nume = std::move(nume_);}
     void setGrupa(int grupa_){grupa = grupa_;}
     void setFacultate(Facultate f){facultate = f;}
-};
+    friend std::ostream& operator<<(std::ostream& os, const Student& student) {
+        os << "Student:" << student.nume << " Grupa: " << student.grupa << " " << student.facultate;
+        return os;
+    }};
 void f(Student st){
     Student s = st;
 }
@@ -60,12 +63,13 @@ Student f2(){
 int main() {
     Facultate fmi, poli{"Poli"}, ase{"Ase"};
     std::cout<<"1\n";
-    Student s;
-    s.setFacultate(poli);
+    Student s("Theo", 151);
     std::cout<<"2\n";
     Student st{"", -1};
+    st.setFacultate(poli);
     std::cout<<"3\n";
     f(st);
     std::cout<<fmi<<'\n'<<poli<<'\n'<<ase<<'\n';
+    std::cout<<s<<'\n';
     return 0;
 }
