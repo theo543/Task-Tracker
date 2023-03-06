@@ -82,7 +82,7 @@ public:
         elements.push_back(task);
         up_heapify(elements.size() - 1);
     }
-    [[nodiscard]] Task& get() {
+    [[nodiscard]] Task get() const {
         return elements[0];
     }
     Task pop() {

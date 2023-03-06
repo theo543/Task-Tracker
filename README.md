@@ -15,7 +15,7 @@
 <!-- - [ ] pentru o altă clasă: constructor de mutare, `operator=` de mutare, destructor -->
 <!-- - [ ] pentru o altă clasă: toate cele 5 funcții membru speciale -->
 - [x] `operator<<` pentru toate clasele
-- [ ] cât mai multe `const` (unde este cazul)
+- [x] cât mai multe `const` (unde este cazul)
 - [x] implementarea a minim 3 funcții membru publice pentru funcționalități specifice temei alese
 - [x] scenariu de utilizare a claselor definite:
   - crearea de obiecte și apelarea funcțiilor membru publice în main
