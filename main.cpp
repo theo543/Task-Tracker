@@ -7,15 +7,15 @@ class Student {
     std::string name;
     int year;
 public:
-    std::ostream friend & operator<<(std::ostream &os, const Student& u)  {
-        os << "{" << u.name << ' ' <<", year: " << u.year << "}";
-        return os;
-    }
     [[nodiscard]] std::string getName() const {
         return name;
     }
     [[nodiscard]] int getYear() const {
         return year;
+    }
+    std::ostream friend & operator<<(std::ostream &os, const Student& u)  {
+        os << "{" << u.getName() << ' ' <<", year: " << u.getYear() << "}";
+        return os;
     }
     Student() : name(""), year(0) {}
     Student(std::string name_, int year_) : name(std::move(name_)), year(year_) {}
@@ -47,7 +47,7 @@ public:
     }
     Task(const Student& assignee_, int priority_, std::string description_) : assignee(assignee_), priority(priority_), description(std::move(description_)) {}
     std::ostream friend & operator<<(std::ostream &os, const Task& t)  {
-        os << "{" << t.description << ", priority " << t.priority << ", assigned to " << t.assignee << "}";
+        os << "{" << t.getDescription() << ", priority " << t.getPriority() << ", assigned to " << t.getAssignee() << "}";
         return os;
     }
 };
@@ -98,10 +98,13 @@ public:
     [[nodiscard]] unsigned int size() const {
         return elements.size();
     }
+    [[nodiscard]] std::vector<Task> toArray() const {
+        return elements;
+    }
     std::ostream friend & operator<<(std::ostream &os, const Heap& h)  {
         os<<"Heap of size "<<h.size()<<"\n";
         // print vector
-        for (const auto & element : h.elements)
+        for (const auto & element : h.toArray())
             os << element << ' ';
         return os;
     }
