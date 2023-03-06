@@ -82,15 +82,15 @@ public:
         elements.push_back(task);
         up_heapify(elements.size() - 1);
     }
+    [[nodiscard]] Task& get() {
+        return elements[0];
+    }
     Task pop() {
-        auto task = elements[0];
+        auto task = get();
         elements[0] = elements[elements.size() - 1];
         elements.pop_back();
         down_heapify(0);
         return task;
-    }
-    [[nodiscard]] Task& get() {
-        return elements[0];
     }
     [[nodiscard]] bool empty() const {
         return elements.empty();
@@ -133,6 +133,11 @@ int main(){
         getline(std::cin, description);
         h.push(Task(users[assignee - 1], priority, description));
     }
-    std::cout << "Most important task: " << h.get() << '\n';
+    int query_len;
+    std::cin>>query_len;
+    std::cout<<"The " << query_len << " most important tasks are:\n";
+    for(int i = 0; i < query_len; i++) {
+        std::cout<<h.pop()<<"\n";
+    }
     return 0;
 }
