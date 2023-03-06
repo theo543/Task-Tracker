@@ -133,7 +133,6 @@ int main(){
         getline(std::cin, description);
         h.push(Task(users[assignee - 1], priority, description));
     }
-    Task &most_important = h.get();
-    std::cout << "Most important task: " << most_important << '\n';
+    std::cout << "Most important task: " << h.get() << '\n';
     return 0;
 }
