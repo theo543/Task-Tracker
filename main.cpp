@@ -195,6 +195,7 @@ int main(){
         try {
             std::cout << h.pop() << "\n";
         } catch (std::out_of_range& e) {
+            (void)e; // suppress unused variable error
             std::cout << "ERROR: No more tasks to show\n";
             break;
         }
