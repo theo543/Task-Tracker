@@ -1,36 +1,38 @@
-#include <fstream>
+#include <utility>
 #include <vector>
 #include <string>
 #include <iostream>
+#include <numeric>
 
-class Student {
+class Teacher {
     std::string name;
-    int year;
+    std::string course;
 public:
     [[nodiscard]] std::string getName() const {
         return name;
     }
-    [[nodiscard]] int getYear() const {
-        return year;
+    [[nodiscard]] std::string getCourse() const {
+        return course;
     }
-    std::ostream friend & operator<<(std::ostream &os, const Student& u)  {
-        os << "{" << u.getName() << ' ' <<", year: " << u.getYear() << "}";
+    std::ostream friend & operator<<(std::ostream &os, const Teacher& u)  {
+        os << "{" << u.getName() <<", teaching: " << u.getCourse() << "}";
         return os;
     }
-    Student() : name(""), year(0) {}
-    Student(std::string name_, int year_) : name(std::move(name_)), year(year_) {}
-    Student(const Student& other) : name(other.name), year(other.year){}
-    Student& operator=(const Student& other){
+    Teacher() : name(""), course("") {}
+    Teacher(std::string name_, std::string course_) : name(std::move(name_)), course(std::move(course_)) {}
+    Teacher(const Teacher& other) : name(other.name), course(other.course){}
+    Teacher& operator=(const Teacher& other){
         name = other.name;
-        year = other.year;
+        course = other.course;
         return *this;
     }
-    ~Student() {}
+    ~Teacher() {}
 };
 
 class Task {
-    Student assignee;
-    int priority;
+    Teacher teacher;
+    int priority = 0;
+    const static inline std::vector<std::string> priority_names = {"optional", "low", "medium", "high", "OVERDUE"};
     std::string description;
 public:
     int friend operator <=> (const Task& lhs, const Task& rhs) {
@@ -42,26 +44,41 @@ public:
     [[nodiscard]] std::string getDescription() const {
         return description;
     }
-    [[nodiscard]] Student getAssignee() const {
-        return assignee;
+    [[nodiscard]] Teacher getAssignee() const {
+        return teacher;
     }
-    Task(const Student& assignee_, int priority_, std::string description_) : assignee(assignee_), priority(priority_), description(std::move(description_)) {}
+    Task(const Teacher& teacher_, int priority_, std::string description_) : teacher(teacher_), priority(priority_), description(std::move(description_)) {
+        if(priority_ < 0 || priority_ > 4) {
+            throw std::invalid_argument("Priority must be between 0 and 4 but was " + std::to_string(priority_));
+        }
+    }
     std::ostream friend & operator<<(std::ostream &os, const Task& t)  {
-        os << "{" << t.getDescription() << ", priority " << t.getPriority() << ", assigned to " << t.getAssignee() << "}";
+        os << "{" << t.getDescription() << ", " << priority_names[t.getPriority()] << ", assigned by " << t.getAssignee() << "}";
         return os;
+    }
+    static std::vector<std::string> getPriorityNames() {
+        return priority_names;
     }
 };
 
 class Heap {
     std::vector<Task> elements;
+    bool ascending;
+    [[nodiscard]] bool less_than(const Task& lhs, const Task& rhs) const {
+        if(ascending) {
+            return lhs < rhs;
+        } else {
+            return rhs < lhs;
+        }
+    }
     void down_heapify(unsigned int node) {
         unsigned int i = node;
         while(2 * i + 1 < elements.size()) {
             unsigned int target = i;
-            if(elements[2 * i + 1] < elements[target]) {
+            if(less_than(elements[2 * i + 1], elements[target])) {
                 target = 2 * i + 1;
             }
-            if(2 * i + 2 < elements.size() && elements[2 * i + 2] < elements[target]) {
+            if(2 * i + 2 < elements.size() && less_than(elements[2 * i + 2], elements[target])) {
                 target = 2 * i + 2;
             }
             if(target == i) {
@@ -72,7 +89,7 @@ class Heap {
         }
     }
     void up_heapify(unsigned int i) {
-        while(i != 0 && elements[i] < elements[(i - 1) / 2]) {
+        while(i != 0 && less_than(elements[i], elements[(i - 1) / 2])) {
             std::swap(elements[i], elements[(i - 1) / 2]);
             i = (i - 1) / 2;
         }
@@ -86,6 +103,9 @@ public:
         return elements[0];
     }
     Task pop() {
+        if(empty()) {
+            throw std::out_of_range("Heap is empty");
+        }
         auto task = get();
         elements[0] = elements[elements.size() - 1];
         elements.pop_back();
@@ -108,36 +128,76 @@ public:
             os << element << ' ';
         return os;
     }
+    explicit Heap(bool asc) : ascending(asc) {}
+    Heap() : ascending(true) {}
 };
+
+template<typename Type>
+std::pair<int, Type> ask_user(std::string const& question, std::vector<Type> const& options, bool number = true) {
+    while(true) {
+        std::cout << question << "\n";
+        for (unsigned int i = 0; i < options.size(); i++) {
+            if (number) {
+                std::cout << i + 1 << ". ";
+            }
+            std::cout << options[i] << "\n";
+        }
+        unsigned int choice;
+        std::cin >> choice;
+        if (choice < 1 || choice > options.size()) {
+            std::cout << "Invalid choice, try again\n";
+            std::cin.clear();
+            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+            continue;
+        }
+        return std::make_pair(choice, options[choice - 1]);
+    }
+}
 
 int main(){
     Heap h;
-    std::vector<Student> users;
-    int user_nr;
-    std::cin >> user_nr;
-    users.resize(user_nr);
-    for(int i = 0; i < user_nr; i++) {
+    std::vector<Teacher> teachers;
+    int teacher_nr;
+    std::cout << "How many teachers are there?\n";
+    std::cin >> teacher_nr;
+    teachers.resize(teacher_nr);
+    for(int i = 0; i < teacher_nr; i++) {
+        std::cout << "Enter the name of the teacher:\n";
         std::string name;
-        int year;
-        std::cin >> name >> year;
-        users[i] = Student(name, year);
-        std::cout<<users[i]<<"\n";
+        std::cin >> std::ws;
+        std::getline(std::cin, name);
+        std::cout << "What does the teacher teach?\n";
+        std::string course;
+        std::cin >> std::ws;
+        std::getline(std::cin, course);
+        teachers[i] = Teacher(name, course);
+        std::cout << teachers[i] << "\n";
     }
     int task_nr;
+    std::cout << "How many tasks are there?\n";
     std::cin >> task_nr;
     for(int i = 0; i < task_nr; i++) {
         std::string description;
-        int priority;
-        int assignee;
-        std::cin >> priority >> assignee;
-        getline(std::cin, description);
-        h.push(Task(users[assignee - 1], priority, description));
+        int priority = ask_user<std::string>("What is the priority of the task?", Task::getPriorityNames()).first - 1;
+        Teacher teacher = ask_user<Teacher>("Which teacher assigned the task?", teachers).second;
+        std::cout << "Enter the description of the task:\n";
+        std::cin >> std::ws;
+        std::getline(std::cin, description);
+        Task t = Task(teacher, priority, description);
+        std::cout<<t<<"\n";
+        h.push(t);
     }
     int query_len;
+    std::cout<<"How many tasks would you like to work on today?\n";
     std::cin>>query_len;
     std::cout<<"The " << query_len << " most important tasks are:\n";
     for(int i = 0; i < query_len; i++) {
-        std::cout<<h.pop()<<"\n";
+        try {
+            std::cout << h.pop() << "\n";
+        } catch (std::out_of_range& e) {
+            std::cout << "ERROR: No more tasks to show\n";
+            break;
+        }
     }
     return 0;
 }
