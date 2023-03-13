@@ -349,8 +349,15 @@ int main(){
     TaskData td;
     if(option) {
         td = TaskDataFactory::load_file(ask_path("Enter the path to load: "));
-        const std::string prompt = "Would you like to add more tasks to the queue?\n";
-        if(ask_user<std::string>(prompt, {"Yes", "No"}).first == 1) {
+        if(ask_user<std::string>("Would you like to add more teachers?\n", {"Yes", "No"}).first == 1){
+            int teacher_nr;
+            std::cout << "How many teachers are there?\n";
+            std::cin >> teacher_nr;
+            for(int i = 0; i < teacher_nr; i++) {
+                td.addTeacher(TeacherFactory::read_teacher(std::cin, false));
+            }
+        }
+        if(ask_user<std::string>("Would you like to add more tasks to the queue?\n", {"Yes", "No"}).first == 1) {
             int task_nr;
             std::cout << "How many tasks are there?\n";
             std::cin >> task_nr;
