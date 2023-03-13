@@ -197,6 +197,8 @@ public:
     }
 };
 
+class TaskDataFactory;
+
 class TaskData {
     Heap h;
     std::vector<Teacher> teachers;
@@ -225,72 +227,6 @@ public:
         return h.pop();
     }
 
-    static TaskData load_stdin() {
-        std::cout << "How many teachers are there?\n";
-        int teacher_nr;
-        std::cin >> teacher_nr;
-        TaskData td = TaskData();
-        td.reserveTeachers(teacher_nr);
-        for(int i = 0; i < teacher_nr; i++) {
-            std::cout << "Enter the name of the teacher:\n";
-            std::string name;
-            std::cin >> std::ws;
-            std::getline(std::cin, name);
-            std::cout << "What does the teacher teach?\n";
-            std::string course;
-            std::cin >> std::ws;
-            std::getline(std::cin, course);
-            td.addTeacher(Teacher(name, course));
-        }
-        int task_nr;
-        std::cout << "How many tasks are there?\n";
-        std::cin >> task_nr;
-        for(int i = 0; i < task_nr; i++) {
-            std::string description;
-            int priority = ask_user<std::string>("What is the priority of the task?", Task::getPriorityNames()).first - 1;
-            Teacher teacher = ask_user<Teacher>("Which teacher assigned the task?", td.getTeachers()).second;
-            std::cout << "Enter the description of the task:\n";
-            std::cin >> std::ws;
-            std::getline(std::cin, description);
-            Task t = Task(teacher, priority, description);
-            std::cout<<t<<"\n";
-            td.addTask(t);
-        }
-        return td;
-    }
-
-    static TaskData load_file(const std::filesystem::path& path) {
-        std::ifstream file(path);
-        std::string teacher_nr_str;
-        std::getline(file, teacher_nr_str);
-        int teacher_nr = std::stoi(teacher_nr_str);
-        TaskData td = TaskData();
-        td.reserveTeachers(teacher_nr);
-        for(int i = 0; i < teacher_nr; i++) {
-            std::string name;
-            std::string course;
-            std::getline(file, name);
-            std::getline(file, course);
-            td.addTeacher(Teacher(name, course));
-        }
-        std::string task_nr_str;
-        std::getline(file, task_nr_str);
-        int task_nr = std::stoi(task_nr_str);
-        std::vector<Task> tasks;
-        tasks.reserve(task_nr);
-        for(int i = 0; i < task_nr; i++){
-            std::string teacher_str;
-            std::string priority_str;
-            std::string description;
-            std::getline(file, teacher_str);
-            std::getline(file, priority_str);
-            std::getline(file, description);
-            tasks.emplace_back(td.getTeachers()[std::stoi(teacher_str) - 1], std::stoi(priority_str), description);
-        }
-        td.h = Heap(std::move(tasks), false, true);
-        return td;
-    }
-
     void save_file(const std::filesystem::path& path) {
         std::ofstream file(path);
         file<<teachers.size()<<"\n";
@@ -308,6 +244,103 @@ public:
             file<<task.getDescription()<<"\n";
         }
     }
+
+    friend TaskDataFactory;
+};
+
+class TaskFactory {
+public:
+    static Task read_task(std::istream &input, std::vector<Teacher> const &teachers, bool silent){
+        std::string description;
+        int priority;
+        Teacher teacher;
+        if(!silent) {
+            priority = ask_user<std::string>("What is the priority of the task?", Task::getPriorityNames()).first - 1;
+            teacher = ask_user<Teacher>("Which teacher assigned the task?", teachers).second;
+            std::cout << "Enter the description of the task:\n";
+            std::cin >> std::ws;
+            std::getline(std::cin, description);
+        }else{
+            std::string teacher_str;
+            std::string priority_str;
+            std::getline(input, teacher_str);
+            std::getline(input, priority_str);
+            std::getline(input, description);
+            priority = std::stoi(priority_str);
+            teacher = teachers[std::stoi(teacher_str) - 1];
+        }
+        Task t = Task(teacher, priority, description);
+        if(!silent)
+            std::cout<<t<<"\n";
+        return t;
+    }
+};
+
+class TeacherFactory{
+public:
+    static Teacher read_teacher(std::istream &input, bool silent){
+        if(!silent){
+            std::cout << "Enter the name of the teacher:\n";
+            std::string name;
+            std::cin >> std::ws;
+            std::getline(std::cin, name);
+            std::cout << "What does the teacher teach?\n";
+            std::string course;
+            std::cin >> std::ws;
+            std::getline(std::cin, course);
+            return {name, course};
+        } else {
+            std::string name;
+            std::string course;
+            std::getline(input, name);
+            std::getline(input, course);
+            return {name, course};
+        }
+    }
+};
+
+class TaskDataFactory {
+public:
+    static TaskData load_stdin() {
+        std::cout << "How many teachers are there?\n";
+        int teacher_nr;
+        std::cin >> teacher_nr;
+        TaskData td = TaskData();
+        td.reserveTeachers(teacher_nr);
+        for(int i = 0; i < teacher_nr; i++) {
+            td.addTeacher(TeacherFactory::read_teacher(std::cin, false));
+        }
+        int task_nr;
+        std::cout << "How many tasks are there?\n";
+        std::cin >> task_nr;
+        for(int i = 0; i < task_nr; i++) {
+            td.addTask(TaskFactory::read_task(std::cin, td.getTeachers(), false));
+        }
+        return td;
+    }
+
+    static TaskData load_file(const std::filesystem::path& path) {
+        std::ifstream file(path);
+        std::string teacher_nr_str;
+        std::getline(file, teacher_nr_str);
+        int teacher_nr = std::stoi(teacher_nr_str);
+        TaskData td = TaskData();
+        td.reserveTeachers(teacher_nr);
+        for(int i = 0; i < teacher_nr; i++) {
+            td.addTeacher(TeacherFactory::read_teacher(file, true));
+        }
+        std::string task_nr_str;
+        std::getline(file, task_nr_str);
+        int task_nr = std::stoi(task_nr_str);
+        std::vector<Task> tasks;
+        tasks.reserve(task_nr);
+        for(int i = 0; i < task_nr; i++){
+            tasks.push_back(TaskFactory::read_task(file, td.getTeachers(), true));
+        }
+        td.h = Heap(std::move(tasks), false, true);
+        return td;
+    }
+
 };
 
 int main(){
@@ -315,27 +348,18 @@ int main(){
     bool option = ask_user<std::string>("Load from file or enter data manually?", {"Load from file", "Enter data manually"}).first == 1;
     TaskData td;
     if(option) {
-        td = TaskData::load_file(ask_path("Enter the path to load: "));
-        const std::string prompt = "Would you like to add more tasks to the queue? (y/n)\n";
-        if(ask_user<std::string>(prompt, {"y", "n"}).first == 1) {
-            /// TODO move this and version from task-data init to task factory
+        td = TaskDataFactory::load_file(ask_path("Enter the path to load: "));
+        const std::string prompt = "Would you like to add more tasks to the queue?\n";
+        if(ask_user<std::string>(prompt, {"Yes", "No"}).first == 1) {
             int task_nr;
             std::cout << "How many tasks are there?\n";
             std::cin >> task_nr;
             for(int i = 0; i < task_nr; i++) {
-                std::string description;
-                int priority = ask_user<std::string>("What is the priority of the task?", Task::getPriorityNames()).first - 1;
-                Teacher teacher = ask_user<Teacher>("Which teacher assigned the task?", td.getTeachers()).second;
-                std::cout << "Enter the description of the task:\n";
-                std::cin >> std::ws;
-                std::getline(std::cin, description);
-                Task t = Task(teacher, priority, description);
-                std::cout<<t<<"\n";
-                td.addTask(t);
+                td.addTask(TaskFactory::read_task(std::cin, td.getTeachers(), false));
             }
         }
     } else {
-        td = TaskData::load_stdin();
+        td = TaskDataFactory::load_stdin();
     }
     int query_len;
     std::cout<<"There are "<<td.queueSize()<<" tasks in the queue.\n";
