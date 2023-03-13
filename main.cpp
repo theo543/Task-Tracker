@@ -183,8 +183,7 @@ public:
         return os;
     }
     explicit Heap(bool asc = false) : ascending(asc) {}
-    explicit Heap(std::vector<Task> &&elements_, bool asc = false, bool assert_valid = false) : ascending(asc) {
-        elements = std::move(elements_);
+    explicit Heap(std::vector<Task> &&elements_, bool asc = false, bool assert_valid = false) : elements(std::move(elements_)), ascending(asc) {
         bool valid = check_valid();
         if(!valid){
             if(assert_valid)
