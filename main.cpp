@@ -23,7 +23,7 @@ std::pair<int, Type> ask_user(std::string const& question, std::vector<Type> con
         unsigned int choice;
         input >> choice;
         if (choice < 1 || choice > options.size()) {
-            std::cout << "Invalid choice, try again\n";
+            output << "Invalid choice, try again\n";
             input.clear();
             input.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
             continue;
