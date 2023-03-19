@@ -154,6 +154,8 @@ public:
         up_heapify(elements.size() - 1);
     }
     [[nodiscard]] Task get() const {
+        if(empty())
+            throw std::out_of_range("Heap is empty");
         return elements[0];
     }
     Task pop() {
