@@ -204,9 +204,6 @@ class TaskData {
     Heap h;
     std::vector<Teacher> teachers;
 public:
-    void reserveTeachers(unsigned int size) {
-        teachers.reserve(size);
-    }
     void addTeacher(const Teacher& teacher) {
         teachers.push_back(teacher);
     }
@@ -307,7 +304,6 @@ public:
         int teacher_nr;
         std::cin >> teacher_nr;
         TaskData td = TaskData();
-        td.reserveTeachers(teacher_nr);
         for(int i = 0; i < teacher_nr; i++) {
             td.addTeacher(TeacherFactory::read_teacher(std::cin, false));
         }
@@ -326,7 +322,6 @@ public:
         std::getline(file, teacher_nr_str);
         int teacher_nr = std::stoi(teacher_nr_str);
         TaskData td = TaskData();
-        td.reserveTeachers(teacher_nr);
         for(int i = 0; i < teacher_nr; i++) {
             td.addTeacher(TeacherFactory::read_teacher(file, true));
         }
