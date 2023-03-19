@@ -280,7 +280,7 @@ public:
         for(const auto& teacher : td.teachers) {
             output<<teacher.getName()<<"\n";
             output<<teacher.getCourse()<<"\n";
-            next_id += !teacher_map.contains(teacher.getName());
+            next_id++;
             teacher_map[teacher.getName()] = next_id;
         }
         output<<td.h.size()<<"\n";
