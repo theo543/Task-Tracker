@@ -276,14 +276,12 @@ public:
     static void writeTaskData(std::ostream &output, const TaskData &td) {
         output<<td.teachers.size()<<"\n";
         std::map<std::string, unsigned int> teacher_map;
-        int next_id = 1;
+        int next_id = 0;
         for(const auto& teacher : td.teachers) {
             output<<teacher.getName()<<"\n";
             output<<teacher.getCourse()<<"\n";
-            if(teacher_map.find(teacher.getName()) == teacher_map.end()) {
-                teacher_map[teacher.getName()] = next_id;
-                next_id++;
-            }
+            next_id += !teacher_map.contains(teacher.getName());
+            teacher_map[teacher.getName()] = next_id;
         }
         output<<td.h.size()<<"\n";
         for(const auto& task : td.h.getElements()) {
