@@ -6,6 +6,7 @@
 #include <numeric>
 #include <filesystem>
 #include <map>
+#include <functional>
 
 class Teacher {
     std::string name;
