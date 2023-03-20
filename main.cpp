@@ -371,7 +371,7 @@ int main(){
         else
             td = InputUtils::readTaskData(file, nullStream, true);
     });
-    term.addOption("Save to file.", [](auto &in, auto &out, auto &td) {
+    term.addOption("Save to file.", [](auto &in, auto &out, auto const &td) {
         auto file = std::ofstream(ask_path("Enter the path to save: ", in, out));
         if(!file)
             out<<"Failed to open file for writing.\n";
