@@ -7,49 +7,6 @@
 #include <filesystem>
 #include <map>
 
-template <typename Type>
-void prompt_user(std::string const& prompt, std::vector<Type> const& options, std::ostream& output = std::cout) {
-    output << prompt << "\n";
-    for (unsigned int i = 0; i < options.size(); i++) {
-        output << i + 1 << ". ";
-        output << options[i] << "\n";
-    }
-}
-
-template<typename Type>
-std::pair<int, Type> ask_user(std::string const& question, std::vector<Type> const& options, std::istream& input = std::cin, std::ostream& output = std::cout) {
-    while(true) {
-        prompt_user(question, options, output);
-        unsigned int choice;
-        input >> choice;
-        if (choice < 1 || choice > options.size()) {
-            output << "Invalid choice, try again\n";
-            input.clear();
-            input.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-            continue;
-        }
-        return std::make_pair(choice, options[choice - 1]);
-    }
-}
-
-std::filesystem::path ask_path(std::string const& prompt) {
-    using namespace std::filesystem;
-    while(true) {
-        path p = current_path();
-        std::cout << "Current path: " << p << std::endl;
-        std::cout << prompt << std::endl;
-        std::string input;
-        std::cin >> input;
-        p = p / input;
-        p = weakly_canonical(p);
-        std::cout << "New path: " << p << std::endl;
-        bool choice = ask_user("Is this correct?", std::vector{"Yes", "No"}).first == 1;
-        if(choice) {
-            return p;
-        }
-    }
-}
-
 class Teacher {
     std::string name;
     std::string course;
@@ -229,6 +186,48 @@ public:
     friend class InputUtils;
 };
 
+template <typename Type>
+void prompt_user(std::string const& prompt, std::vector<Type> const& options, std::ostream& output = std::cout) {
+    output << prompt << "\n";
+    for (unsigned int i = 0; i < options.size(); i++) {
+        output << i + 1 << ". ";
+        output << options[i] << "\n";
+    }
+}
+
+template<typename Type>
+std::pair<int, Type> ask_user(std::string const& question, std::vector<Type> const& options, std::istream& input = std::cin, std::ostream& output = std::cout) {
+    while(true) {
+        prompt_user(question, options, output);
+        unsigned int choice;
+        input >> choice;
+        if (choice < 1 || choice > options.size()) {
+            output << "Invalid choice, try again\n";
+            input.clear();
+            input.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+            continue;
+        }
+        return std::make_pair(choice, options[choice - 1]);
+    }
+}
+
+std::filesystem::path ask_path(std::string const& prompt, std::istream& input = std::cin, std::ostream& output = std::cout) {
+    using namespace std::filesystem;
+    while(true) {
+        path p = current_path();
+        output << "Current path: " << p << std::endl;
+        output << prompt << std::endl;
+        std::string path_addition;
+        input >> path_addition;
+        p = p / path_addition;
+        p = weakly_canonical(p);
+        output << "New path: " << p << std::endl;
+        bool choice = ask_user("Is this correct?", std::vector{"Yes", "No"}, input, output).first == 1;
+        if(choice) {
+            return p;
+        }
+    }
+}
 
 class InputUtils {
 public:
@@ -291,61 +290,97 @@ public:
         }
     }
 
+    // rvalue overloads
+    // to be added as needed
+    static TaskData readTaskData(std::istream &&input, std::ostream &&output, bool assertIsHeap){
+        return readTaskData(input, output, assertIsHeap);
+    }
+    static void writeTaskData(std::ostream &&output, const TaskData &td) {
+        writeTaskData(output, td);
+    }
+};
+
+class TerminalOption {
+    std::string name;
+    typedef std::function<void(std::istream&, std::ostream&, TaskData&)> TerminalOptionFunction;
+    TerminalOptionFunction function;
+public:
+    [[nodiscard]] bool isCallable() const {
+        return function != nullptr;
+    }
+    void operator()(std::istream &input, std::ostream &output, TaskData &td) {
+        if(!isCallable())
+            throw std::runtime_error("Cannot call option \"" + name + "\" because it is not callable");
+        function(input, output, td);
+    }
+    friend std::ostream &operator<<(std::ostream &os, const TerminalOption &option) {
+        os << option.name;
+        return os;
+    }
+    TerminalOption(std::string name, TerminalOptionFunction function) : name(std::move(name)), function(std::move(function)) {}
+};
+
+class TerminalController {
+    std::istream &input;
+    std::ostream &output;
+    TaskData td{};
+    std::vector<TerminalOption> options;
+public:
+    TerminalController(std::istream &input, std::ostream &output) : input(input), output(output) {}
+    void addOption(const TerminalOption& new_option) {
+        options.push_back(new_option);
+    }
+    void addOption(const std::string& name, const std::function<void(std::istream&, std::ostream&, TaskData&)>& function) {
+        addOption(TerminalOption(name, function));
+    }
+    // returns false when an un-callable option was selected
+    bool readExecuteCommand() {
+        auto option = ask_user<TerminalOption>("What would you like to do?", options, input, output);
+        if(!option.second.isCallable())
+            return false;
+        option.second(input, output, td);
+        return true;
+    }
 };
 
 int main(){
     std::cout<<"Welcome to the task tracker!\n";
-    bool option = ask_user<std::string>("Load from file or enter data manually?", {"Load from file", "Enter data manually"}).first == 1;
-    TaskData td;
-    if(option) {
-        std::ofstream nullOutput{};
-        auto file = std::ifstream(ask_path("Enter the path to load: "));
-        td = InputUtils::readTaskData(file, nullOutput, true);
-        if(ask_user<std::string>("Would you like to add more teachers?\n", {"Yes", "No"}).first == 1){
-            int teacher_nr;
-            std::cout << "How many teachers are there?\n";
-            std::cin >> teacher_nr;
-            for(int i = 0; i < teacher_nr; i++) {
-                td.addTeacher(InputUtils::read_teacher(std::cin, std::cout));
-            }
-        }
-        if(ask_user<std::string>("Would you like to add more tasks to the queue?\n", {"Yes", "No"}).first == 1) {
-            int task_nr;
-            std::cout << "How many tasks are there?\n";
-            std::cin >> task_nr;
-            for(int i = 0; i < task_nr; i++) {
-                td.addTask(InputUtils::read_task(std::cin, td.getTeachers(), std::cout));
-            }
-        }
-    } else {
-        td = InputUtils::readTaskData(std::cin, std::cout);
-    }
-    int query_len;
-    std::cout<<"There are "<<td.queueSize()<<" tasks in the queue.\n";
-    std::cout<<"How many tasks would you like to work on today? (enter 0 to skip to saving data unchanged)\n";
-    std::cin>>query_len;
-    std::string modified_prompt;
-    if(query_len) {
+    TerminalController term{std::cin, std::cout};
+    term.addOption("Add a teacher.", [](auto &in, auto &out, auto &td) {
+        td.addTeacher(InputUtils::read_teacher(in, out));
+    });
+    term.addOption("Add a task.", [](auto &in, auto &out, auto &td) {
+        td.addTask(InputUtils::read_task(in, td.getTeachers(), out));
+    });
+    term.addOption("Work on some tasks.", [](auto &in, auto &out, auto &td) {
+        out<<"There are "<<td.queueSize()<<" tasks in the queue.\n";
+        out<<"How many tasks would you like to work on today?\n";
+        int query_len;
+        in>>query_len;
         TaskData td_copy = td;
-        modified_prompt = " (" + std::to_string(query_len) + " tasks have been removed from the list)";
-        std::cout << "The " << query_len << " most important tasks are:\n";
-        for (int i = 0; i < query_len; i++) {
-            if (td.queueEmpty()) {
-                std::cout << "ERROR: There are no more tasks in the queue.\n";
+        while(query_len--) {
+            if(td_copy.queueEmpty()) {
+                out<<"No more tasks remaining.\n";
                 break;
             }
-            std::cout << td.popTask() << "\n";
+            out<<td_copy.popTask()<<"\n";
         }
-        bool remove = ask_user<std::string>("Would you like to remove these tasks from the queue?" + modified_prompt, {"Yes", "No"}).first == 1;
-        if(!remove) {
+        bool remove = ask_user<std::string>("Would you like to remove these tasks from the queue?", {"No", "Yes"}, in, out).first == 2;
+        if(remove) {
             td = td_copy;
-            modified_prompt = "";
         }
+    });
+    term.addOption("Load from file.", [](auto &in, auto &out, auto &td) {
+        td = InputUtils::readTaskData(std::ifstream(ask_path("Enter the path to load: ", in, out)), std::ofstream{}, true);
+    });
+    term.addOption("Save to file.", [](auto &in, auto &out, auto &td) {
+        InputUtils::writeTaskData(std::ofstream(ask_path("Enter the path to save: ", in, out)), td);
+    });
+    term.addOption("Exit.", nullptr);
+    bool exitChosen = false;
+    while (!exitChosen) {
+        exitChosen = !term.readExecuteCommand();
     }
-    bool save = ask_user<std::string>("Would you like to save data to file?" + modified_prompt, {"Yes", "No"}).first == 1;
-    if (save) {
-        auto file = std::ofstream(ask_path("Enter the path to save: "));
-        InputUtils::writeTaskData(file, td);
-    }
+    std::cout<<"Goodbye!"<<std::endl;
     return 0;
 }
