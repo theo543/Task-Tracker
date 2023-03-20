@@ -290,14 +290,6 @@ public:
         }
     }
 
-    // rvalue overloads
-    // to be added as needed
-    static TaskData readTaskData(std::istream &&input, std::ostream &&output, bool assertIsHeap){
-        return readTaskData(input, output, assertIsHeap);
-    }
-    static void writeTaskData(std::ostream &&output, const TaskData &td) {
-        writeTaskData(output, td);
-    }
 };
 
 class TerminalOption {
@@ -371,10 +363,19 @@ int main(){
         }
     });
     term.addOption("Load from file.", [](auto &in, auto &out, auto &td) {
-        td = InputUtils::readTaskData(std::ifstream(ask_path("Enter the path to load: ", in, out)), std::ofstream{}, true);
+        auto file = std::ifstream(ask_path("Enter the path to load: ", in, out));
+        auto nullStream = std::ofstream{};
+        if(!file)
+            out<<"Failed to open file for reading.\n";
+        else
+            td = InputUtils::readTaskData(file, nullStream, true);
     });
     term.addOption("Save to file.", [](auto &in, auto &out, auto &td) {
-        InputUtils::writeTaskData(std::ofstream(ask_path("Enter the path to save: ", in, out)), td);
+        auto file = std::ofstream(ask_path("Enter the path to save: ", in, out));
+        if(!file)
+            out<<"Failed to open file for writing.\n";
+        else
+            InputUtils::writeTaskData(file, td);
     });
     term.addOption("Exit.", nullptr);
     bool exitChosen = false;
