@@ -218,7 +218,8 @@ std::filesystem::path ask_path(std::string const& prompt, std::istream& input = 
         output << "Current path: " << p << std::endl;
         output << prompt << std::endl;
         std::string path_addition;
-        input >> path_addition;
+        input >> std::ws;
+        std::getline(input, path_addition);
         p = p / path_addition;
         p = weakly_canonical(p);
         output << "New path: " << p << std::endl;
