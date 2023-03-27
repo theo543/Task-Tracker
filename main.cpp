@@ -381,14 +381,17 @@ int main(){
         out<<"How many tasks would you like to work on today?\n";
         int query_len;
         in>>query_len;
+        query_len = std::max(0, query_len);
         TaskData td_copy = td;
-        while(query_len--) {
+        for(;query_len>0;query_len--) {
             if(td_copy.queueEmpty()) {
                 out<<"No more tasks remaining.\n";
                 break;
             }
             out<<td_copy.popTask()<<"\n";
         }
+        if(td.queueSize() == td_copy.queueSize())
+            return;
         bool remove = ask_user<std::string>("Would you like to remove these tasks from the queue?", {"No", "Yes"}, in, out).first == 2;
         if(remove) {
             td = td_copy;
