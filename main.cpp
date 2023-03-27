@@ -22,15 +22,15 @@ public:
         os << "{" << u.getName() <<", teaching: " << u.getCourse() << "}";
         return os;
     }
-    Teacher() : name(""), course("") {}
-    Teacher(std::string name_, std::string course_) : name(std::move(name_)), course(std::move(course_)) {}
-    Teacher(const Teacher& other) : name(other.name), course(other.course){}
-    Teacher& operator=(const Teacher& other){
+    Teacher() : name(""), course("") {}//NOLINT
+    Teacher(std::string name_, std::string course_) : name(std::move(name_)), course(std::move(course_)) {}//NOLINT
+    Teacher(const Teacher& other) : name(other.name), course(other.course){}//NOLINT
+    Teacher& operator=([[maybe_unused]] const Teacher& other){//NOLINT
         name = other.name;
         course = other.course;
         return *this;
     }
-    ~Teacher() {}
+    ~Teacher() {}//NOLINT
 };
 
 class Task {
