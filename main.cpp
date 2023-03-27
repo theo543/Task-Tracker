@@ -319,14 +319,6 @@ class TerminalController {
     std::ostream &output;
     TaskData td{};
     std::vector<TerminalOption> options;
-public:
-    TerminalController(std::istream &input, std::ostream &output) : input(input), output(output) {}
-    void addOption(const TerminalOption& new_option) {
-        options.push_back(new_option);
-    }
-    void addOption(const std::string& name, const std::function<void(std::istream&, std::ostream&, TaskData&)>& function) {
-        addOption(TerminalOption(name, function));
-    }
     // returns false when an un-callable option was selected
     bool readExecuteCommand() {
         auto option = ask_user<TerminalOption>("What would you like to do?", options, input, output);
@@ -335,10 +327,27 @@ public:
         option.second(input, output, td);
         return true;
     }
+public:
+    TerminalController(const TerminalController&) = delete;
+    TerminalController& operator=(const TerminalController&) = delete;
+    TerminalController(std::istream &input, std::ostream &output) : input(input), output(output) {}
+    void addOption(const TerminalOption& new_option) {
+        options.push_back(new_option);
+    }
+    void addOption(const std::string& name, const std::function<void(std::istream&, std::ostream&, TaskData&)>& function) {
+        addOption(TerminalOption(name, function));
+    }
+    void mainLoop(const std::string& start, const std::string& exit) {
+        output<<start;
+        while(true) {
+            if(!readExecuteCommand())
+                break;
+        }
+        output<<exit;
+    }
 };
 
 int main(){
-    std::cout<<"Welcome to the task tracker!\n";
     TerminalController term{std::cin, std::cout};
     term.addOption("Add a teacher.", [](auto &in, auto &out, auto &td) {
         td.addTeacher(InputUtils::read_teacher(in, out));
@@ -379,11 +388,7 @@ int main(){
         else
             InputUtils::writeTaskData(file, td);
     });
-    term.addOption("Exit.", nullptr);
-    bool exitChosen = false;
-    while (!exitChosen) {
-        exitChosen = !term.readExecuteCommand();
-    }
-    std::cout<<"Goodbye!"<<std::endl;
+    term.addOption("Exit.", nullptr); // null function means the command exits the main loop
+    term.mainLoop("Welcome to the task tracker!\n", "Goodbye!\n");
     return 0;
 }
