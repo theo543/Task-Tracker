@@ -179,6 +179,16 @@ public:
         return h.size();
     }
 
+    friend std::ostream & operator<<(std::ostream &os, const TaskData& td)  {
+        os<<"TaskData with "<<td.queueSize()<<" tasks and "<<td.getTeachers().size()<<" teachers\n";
+        os<<"Teachers: ";
+        for (const auto & teacher : td.getTeachers())
+            os << teacher << ' ';
+        os<<"\nTasks: ";
+        os << td.h;
+        return os;
+    }
+
     [[nodiscard]]
     Task popTask() {
         return h.pop();
@@ -292,6 +302,10 @@ public:
         }
     }
 
+    friend std::ostream &operator<<(std::ostream &os, [[maybe_unused]] const InputUtils &iu) { //NOLINT
+        os << "utility class InputUtils - no data";
+        return os;
+    }
 };
 
 class TerminalOption {
@@ -345,6 +359,13 @@ public:
         }
         output<<exit;
     }
+    friend std::ostream &operator<<(std::ostream &os, TerminalController &tc) {
+        std::cout<<"TerminalController options: ";
+        for(const auto& option : tc.options) {
+            std::cout<<"\""<<option<<"\", ";
+        }
+        return os;
+    }
 };
 
 int main(){
@@ -389,6 +410,11 @@ int main(){
             InputUtils::writeTaskData(file, td);
     });
     term.addOption("Exit.", nullptr); // null function means the command exits the main loop
+    term.addOption("Test operator<< overloads.", [&term]([[maybe_unused]] auto &in, auto &out, auto &td) {
+        out<<td<<"\n";
+        out<<term<<"\n";
+        out<<InputUtils{}<<"\n";
+    });
     term.mainLoop("Welcome to the task tracker!\n", "Goodbye!\n");
     return 0;
 }
