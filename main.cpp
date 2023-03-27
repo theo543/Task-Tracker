@@ -413,7 +413,7 @@ int main(){
             InputUtils::writeTaskData(file, td);
     });
     term.addOption("Exit.", nullptr); // null function means the command exits the main loop
-    term.addOption("Test operator<< overloads.", [&term]([[maybe_unused]] auto &in, auto &out, auto &td) {
+    term.addOption("Test operator<< overloads.", [&term]([[maybe_unused]] auto const &in, auto &out, auto const &td) {
         out<<td<<"\n";
         out<<term<<"\n";
         out<<InputUtils{}<<"\n";
