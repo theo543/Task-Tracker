@@ -359,7 +359,7 @@ public:
         }
         output<<exit;
     }
-    friend std::ostream &operator<<(std::ostream &os, TerminalController &tc) {
+    friend std::ostream &operator<<(std::ostream &os, TerminalController const &tc) {
         std::cout<<"TerminalController options: ";
         for(const auto& option : tc.options) {
             std::cout<<"\""<<option<<"\", ";
