@@ -11,7 +11,14 @@
 class Teacher {
     std::string name;
     std::string course;
+    static bool log;
 public:
+    static void setLogsEnabled(bool enabled) {
+        log = enabled;
+    }
+    static bool getLogsEnabled() {
+        return log;
+    }
     [[nodiscard]] std::string getName() const {
         return name;
     }
@@ -22,16 +29,27 @@ public:
         os << "{" << u.getName() <<", teaching: " << u.getCourse() << "}";
         return os;
     }
-    Teacher() : name(""), course("") {}//NOLINT
-    Teacher(std::string name_, std::string course_) : name(std::move(name_)), course(std::move(course_)) {}//NOLINT
-    Teacher(const Teacher& other) : name(other.name), course(other.course){}//NOLINT
-    Teacher& operator=([[maybe_unused]] const Teacher& other){//NOLINT
+    Teacher() {
+        if(log) std::cout << "Teacher default constructor called" << std::endl;
+    }
+    Teacher(std::string name_, std::string course_) : name(std::move(name_)), course(std::move(course_)) {
+        if(log) std::cout << "Teacher constructor called" << std::endl;
+    }
+    Teacher(const Teacher& other) : name(other.name), course(other.course){
+        if(log) std::cout << "Teacher copy constructor called" << std::endl;
+    }
+    Teacher& operator=([[maybe_unused]] const Teacher& other){
+        if(log) std::cout << "Teacher copy assignment called" << std::endl;
         name = other.name;
         course = other.course;
         return *this;
     }
-    ~Teacher() {}//NOLINT
+    ~Teacher() {
+        if(log) std::cout << "Teacher destructor called" << std::endl;
+    }
 };
+
+bool Teacher::log = false;
 
 class Task {
     Teacher teacher;
@@ -278,6 +296,7 @@ public:
         output<<"Enter the number of tasks:\n";
         input>>task_nr;
         std::vector<Task> tasks;
+        tasks.reserve(task_nr);
         for(int i = 0; i < task_nr; i++) {
             tasks.push_back(InputUtils::read_task(input, td.getTeachers(), output));
         }
@@ -417,6 +436,10 @@ int main(){
         out<<td<<"\n";
         out<<term<<"\n";
         out<<InputUtils{}<<"\n";
+    });
+    term.addOption("Toggle Teacher class logging.", []([[maybe_unused]] auto &in, auto &out, [[maybe_unused]] auto &td) {
+        Teacher::setLogsEnabled(!Teacher::getLogsEnabled());
+        out<<"Logging is now "<<(Teacher::getLogsEnabled() ? "enabled" : "disabled")<<".\n";
     });
     term.mainLoop("Welcome to the task tracker!\n", "Goodbye!\n");
     return 0;
